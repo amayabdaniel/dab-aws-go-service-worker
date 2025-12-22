@@ -184,6 +184,13 @@ resource "aws_security_group" "rds" {
     security_groups = [aws_security_group.ecs.id]
   }
 
+  ingress {
+    from_port       = 5432
+    to_port         = 5432
+    protocol        = "tcp"
+    security_groups = [aws_security_group.bastion.id]
+  }
+
   tags = {
     Name = "${local.name_suffix}-rds-sg"
   }
@@ -532,4 +539,83 @@ resource "aws_iam_role_policy" "ecs_exec_ssm" {
       }
     ]
   })
+}
+
+# Bastion Host for RDS access via SSM
+resource "aws_iam_role" "bastion" {
+  name = "${local.name_suffix}-bastion-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "ec2.amazonaws.com"
+      }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "bastion_ssm" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+  role       = aws_iam_role.bastion.name
+}
+
+resource "aws_iam_instance_profile" "bastion" {
+  name = "${local.name_suffix}-bastion-profile"
+  role = aws_iam_role.bastion.name
+}
+
+resource "aws_security_group" "bastion" {
+  name        = "${local.name_suffix}-bastion-sg"
+  description = "Security group for bastion host"
+  vpc_id      = aws_vpc.main.id
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "${local.name_suffix}-bastion-sg"
+  }
+}
+
+data "aws_ami" "amazon_linux_2023" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["al2023-ami-*-x86_64"]
+  }
+
+  filter {
+    name   = "state"
+    values = ["available"]
+  }
+}
+
+resource "aws_instance" "bastion" {
+  ami                    = data.aws_ami.amazon_linux_2023.id
+  instance_type          = "t3.micro"
+  subnet_id              = aws_subnet.public[0].id
+  vpc_security_group_ids = [aws_security_group.bastion.id]
+  iam_instance_profile   = aws_iam_instance_profile.bastion.name
+
+  tags = {
+    Name = "${local.name_suffix}-bastion"
+  }
+}
+
+resource "aws_eip" "bastion" {
+  instance = aws_instance.bastion.id
+  domain   = "vpc"
+
+  tags = {
+    Name = "${local.name_suffix}-bastion-eip"
+  }
 }
