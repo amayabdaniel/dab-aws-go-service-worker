@@ -196,12 +196,36 @@ aws ecs update-service --cluster <cluster-name> --service <service-name> --force
 | SSL Certificate | ACM (app.novaferi.net) |
 | DNS | Route 53 |
 
-### CI/CD (Coming Soon)
-GitHub Actions workflows will handle:
-- Linting and testing
-- Building and pushing Docker images
-- Deploying to ECS
-- Running integration tests
+### CI/CD with GitHub Actions
+
+**On Pull Requests (CI):**
+- Run Go tests
+- Build Docker images (API, Worker, Frontend)
+- Run Terraform plan
+
+**On Merge to Master (CD):**
+- Apply Terraform changes
+- Build and push Docker images to ECR
+- Deploy to ECS with rolling update
+- Health check verification
+
+#### Required GitHub Secrets
+
+Add these secrets in your repository settings (`Settings > Secrets and variables > Actions`):
+
+| Secret | Description |
+|--------|-------------|
+| `AWS_ACCESS_KEY_ID` | AWS access key with permissions for ECR, ECS, Terraform |
+| `AWS_SECRET_ACCESS_KEY` | AWS secret access key |
+
+#### IAM Permissions Required
+
+The AWS credentials need these permissions:
+- `ecr:*` - Push/pull Docker images
+- `ecs:*` - Update services, describe tasks
+- `s3:*` on terraform state bucket - Terraform state
+- `dynamodb:*` on lock table - Terraform state locking
+- `rds:*`, `sqs:*`, `ec2:*`, `iam:*`, `logs:*` - Infrastructure management
 
 ## 📊 Monitoring
 
