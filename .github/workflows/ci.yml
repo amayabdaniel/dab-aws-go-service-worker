@@ -28,7 +28,7 @@ jobs:
           restore-keys: ${{ runner.os }}-go-
 
       - name: Download dependencies
-        run: go mod download
+        run: go mod download && go mod tidy
 
       - name: Run tests
         run: go test -v -race -coverprofile=coverage.out ./...
@@ -114,8 +114,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  terraform-plan:
-    name: Terraform Plan
+  terraform-validate:
+    name: Terraform Validate
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -136,6 +136,10 @@ jobs:
       - name: Tofu Init
         run: tofu init
 
+      - name: Tofu Validate
+        run: tofu validate
+
       - name: Tofu Plan
         run: tofu plan -no-color
-        continue-on-error: true
+        env:
+          TF_VAR_rds_password: ${{ secrets.TF_VAR_RDS_PASSWORD }}

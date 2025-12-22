@@ -10,7 +10,8 @@ import (
 func TestJob_BeforeCreate(t *testing.T) {
 	job := &Job{
 		Status:    JobStatusPending,
-		Payload:   map[string]interface{}{"test": "data"},
+		Type:      "test",
+		Data:      "test data",
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}

@@ -2,7 +2,7 @@
 
 A production-ready microservices platform demonstrating cloud-native DevOps practices with API and Worker services sharing a PostgreSQL database, deployed on AWS ECS Fargate.
 
-## 🌐 Live Demo
+## Live Demo
 
 **Production URL**: https://app.novaferi.net
 
@@ -12,56 +12,65 @@ A production-ready microservices platform demonstrating cloud-native DevOps prac
 | API Health | https://app.novaferi.net/api/health |
 | List Jobs | https://app.novaferi.net/api/jobs |
 
-## ⚖️ Legal Notice
+## Architecture
 
-**COPYRIGHT © 2025 Daniel Amaya Buitrago. ALL RIGHTS RESERVED.**
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        Route 53 (DNS)                           │
+│                      app.novaferi.net                           │
+└─────────────────────────┬───────────────────────────────────────┘
+                          │
+┌─────────────────────────▼───────────────────────────────────────┐
+│              Application Load Balancer (HTTPS)                  │
+│                    ACM Certificate                              │
+└────────┬────────────────────────────────────────┬───────────────┘
+         │ /api/*                                 │ /*
+┌────────▼────────┐                    ┌──────────▼──────────┐
+│   API Service   │                    │  Frontend Service   │
+│   (Go + Gin)    │                    │  (React + Nginx)    │
+│   Port 8080     │                    │     Port 80         │
+└────────┬────────┘                    └─────────────────────┘
+         │
+    ┌────▼────┐
+    │   SQS   │◄──────────────────┐
+    │  Queue  │                   │
+    └────┬────┘                   │
+         │                        │
+┌────────▼────────┐      ┌────────┴────────┐
+│ Worker Service  │      │    Scheduler    │
+│  (Go + GORM)    │      │  (Cron Jobs)    │
+└────────┬────────┘      └─────────────────┘
+         │
+┌────────▼────────┐
+│   PostgreSQL    │
+│   (RDS 16.6)    │
+└─────────────────┘
+```
 
-This repository is protected under the GNU Affero General Public License v3.0 (AGPL-3.0).
-
-### Restrictions:
-- ❌ NO commercial use without written permission
-- ❌ NO integration into proprietary systems
-- ❌ NO derivative works without attribution
-- ❌ NO private/internal use without compliance
-
-### Requirements if used:
-- ✅ Must open-source entire application
-- ✅ Must include this copyright notice
-- ✅ Must disclose all modifications
-- ✅ Must provide source code to all users
-
-**This code is submitted for technical assessment purposes only. Any other use is a violation of copyright law.**
-
-For permissions, contact: daniel.amaya.buitrago@outlook.com
-
-## 🏗️ Architecture
-
-- **API Service**: RESTful API built with Go and Gin framework
+**Components:**
+- **API Service**: RESTful API built with Go 1.23 and Gin framework
 - **Worker Service**: Background job processor with integrated scheduler
 - **Frontend**: React dashboard with real-time updates (Vite + TypeScript)
-- **Scheduler**: Cron-based task scheduler for recurring jobs
-- **Database**: PostgreSQL for persistent storage
-- **Message Queue**: Amazon SQS for asynchronous job processing
-- **Container Orchestration**: AWS ECS Fargate
-- **Load Balancer**: Application Load Balancer
-- **Infrastructure**: Terraform for IaC
+- **Database**: PostgreSQL 16.6 on RDS
+- **Message Queue**: Amazon SQS with Dead Letter Queue
+- **Infrastructure**: OpenTofu/Terraform IaC
 
-## 🎯 Key Features
+## Key Features
 
-- **AI-Assisted Development**: Built using Claude Code for enhanced productivity
 - **Production-Ready**: Health checks, graceful shutdown, structured logging
-- **Security-First**: GORM ORM (no SQL injection), input validation, typed data models
-- **Local AWS Development**: LocalStack for SQS simulation
+- **Security-First**: GORM ORM (SQL injection prevention), input validation, typed models
+- **Local Development**: LocalStack for SQS simulation, Docker Compose
 - **Real-Time Updates**: Frontend auto-refreshes job status every 2 seconds
-- **SOLID Principles**: Dependency injection, repository pattern, clean architecture
+- **Clean Architecture**: Dependency injection, repository pattern, interface-based design
+- **CI/CD Pipeline**: GitHub Actions for automated testing and deployment
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - Docker & Docker Compose
-- Go 1.21+
+- Go 1.23+
 - AWS CLI configured
-- Terraform 1.5+
+- OpenTofu/Terraform 1.5+
 
 ### Local Development
 ```bash
@@ -77,111 +86,122 @@ docker-compose exec localstack awslocal sqs create-queue --queue-name jobs-queue
 
 # Services available at:
 # - Frontend: http://localhost:3000
-# - API: http://localhost:8080/health
+# - API: http://localhost:8080/api/health
 # - PostgreSQL: localhost:5432
 ```
 
-### API Endpoints
-- `GET /health` - Health check
-- `POST /jobs` - Create a new job
-- `GET /jobs/{id}` - Get job status
-- `GET /jobs` - List all jobs (supports `?status=` filter)
+### Running Tests
+```bash
+go test -v ./...
+```
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/health` | Health check (ALB) |
+| GET | `/api/health` | API health check |
+| POST | `/api/jobs` | Create a new job |
+| GET | `/api/jobs/:id` | Get job by ID |
+| GET | `/api/jobs` | List jobs (supports `?status=` filter) |
+
+### Create Job Request
+```bash
+curl -X POST https://app.novaferi.net/api/jobs \
+  -H "Content-Type: application/json" \
+  -d '{"type": "data-processing", "data": "sample input"}'
+```
 
 ### Job Types
-- **data-processing** - General data processing tasks
-- **cleanup** - Remove completed jobs older than 7 days
-- **health-report** - Generate system health metrics
-- **data-aggregation** - Daily statistics aggregation
-- **batch-import** - Process bulk data imports
+| Type | Description |
+|------|-------------|
+| `data-processing` | General data processing tasks |
+| `cleanup` | Remove completed jobs older than 7 days |
+| `health-report` | Generate system health metrics |
+| `data-aggregation` | Daily statistics aggregation |
+| `batch-import` | Process bulk data imports |
 
 ### Scheduled Tasks
-The worker service automatically runs:
+The worker service runs these automatically:
 - **Every 5 minutes**: Cleanup old completed jobs
 - **Every hour**: Generate health report
-- **Daily at 2 AM**: Perform data aggregation
+- **Daily at 2 AM UTC**: Perform data aggregation
 - **Every 30 seconds**: Check for batch import jobs
 
-## 📁 Project Structure
+## Project Structure
 ```
 .
-├── cmd/                    # Application entry points
-│   ├── api/               # API service main
-│   └── worker/            # Worker service main
-├── internal/              # Private application code
-│   ├── api/              # API handlers and middleware
-│   ├── models/           # Data models
-│   ├── database/         # Database connection and migrations
-│   ├── queue/            # SQS client
-│   ├── scheduler/        # Cron-based job scheduler
-│   ├── repository/       # Data access layer
-│   ├── interfaces/       # Dependency injection interfaces
-│   └── worker/           # Job processing logic
-├── frontend/             # React dashboard
-│   ├── src/              # React components and services
-│   ├── public/           # Static assets
-│   └── nginx.conf        # Nginx configuration
-├── pkg/                   # Public packages
-│   ├── config/           # Configuration management
-│   └── logger/           # Structured logging
-├── deployments/          # Deployment configurations
-│   └── docker/           # Dockerfiles
-├── infrastructure/       # Infrastructure as Code
-│   └── terraform/        # Terraform modules and environments
-└── tests/                # Test suites
+├── cmd/
+│   ├── api/                 # API service entrypoint
+│   └── worker/              # Worker service entrypoint
+├── internal/
+│   ├── api/
+│   │   ├── handlers/        # HTTP request handlers
+│   │   └── middleware/      # Request validation, error handling
+│   ├── database/            # Database connection
+│   ├── interfaces/          # Dependency injection interfaces
+│   ├── models/              # Data models (Job, JobPayload, etc.)
+│   ├── queue/               # SQS client
+│   ├── repository/          # Data access layer
+│   ├── scheduler/           # Cron-based job scheduler
+│   └── worker/              # Job processing logic
+├── pkg/
+│   ├── config/              # Configuration management
+│   └── logger/              # Structured logging (slog)
+├── frontend/                # React dashboard (Vite + TypeScript)
+├── deployments/docker/      # Dockerfiles
+├── infrastructure/terraform/ # IaC configuration
+├── tests/                   # Integration tests
+└── .github/workflows/       # CI/CD pipelines
 ```
 
-## 🔧 Development
+## Deployment
 
-### Building Services
+### AWS Infrastructure
 ```bash
-# Build API service
-go build -o bin/api cmd/api/main.go
-
-# Build Worker service
-go build -o bin/worker cmd/worker/main.go
-
-# Run tests
-go test ./...
-```
-
-### Environment Variables
-See `.env.example` for required configuration.
-
-## 🚢 Deployment
-
-### AWS Infrastructure (OpenTofu/Terraform)
-
-```bash
-# Set up backend (first time only)
 cd infrastructure/terraform
-./setup-backend.sh
 
-# Initialize and deploy
+# Initialize (first time)
 tofu init
+
+# Plan and apply
 tofu plan
 tofu apply
 ```
 
-### Build and Deploy Docker Images
-
+### Docker Images
 ```bash
 # Login to ECR
-aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin <account-id>.dkr.ecr.us-east-2.amazonaws.com
+aws ecr get-login-password --region us-east-2 | \
+  docker login --username AWS --password-stdin \
+  $(aws sts get-caller-identity --query Account --output text).dkr.ecr.us-east-2.amazonaws.com
 
-# Build and push API
-docker build -t <account-id>.dkr.ecr.us-east-2.amazonaws.com/<repo>-api:latest -f deployments/docker/api.Dockerfile .
-docker push <account-id>.dkr.ecr.us-east-2.amazonaws.com/<repo>-api:latest
+# Build and push (replace ACCOUNT_ID)
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+REPO=dab-job-platform-c1bfa7bb
 
-# Build and push Worker
-docker build -t <account-id>.dkr.ecr.us-east-2.amazonaws.com/<repo>-worker:latest -f deployments/docker/worker.Dockerfile .
-docker push <account-id>.dkr.ecr.us-east-2.amazonaws.com/<repo>-worker:latest
+# API
+docker build -t $ACCOUNT_ID.dkr.ecr.us-east-2.amazonaws.com/$REPO-api:latest \
+  -f deployments/docker/api.Dockerfile .
+docker push $ACCOUNT_ID.dkr.ecr.us-east-2.amazonaws.com/$REPO-api:latest
 
-# Build and push Frontend
-docker build -t <account-id>.dkr.ecr.us-east-2.amazonaws.com/<repo>-frontend:latest -f frontend/Dockerfile frontend/
-docker push <account-id>.dkr.ecr.us-east-2.amazonaws.com/<repo>-frontend:latest
+# Worker
+docker build -t $ACCOUNT_ID.dkr.ecr.us-east-2.amazonaws.com/$REPO-worker:latest \
+  -f deployments/docker/worker.Dockerfile .
+docker push $ACCOUNT_ID.dkr.ecr.us-east-2.amazonaws.com/$REPO-worker:latest
 
-# Force ECS deployments
-aws ecs update-service --cluster <cluster-name> --service <service-name> --force-new-deployment --region us-east-2
+# Frontend
+docker build -t $ACCOUNT_ID.dkr.ecr.us-east-2.amazonaws.com/$REPO-frontend:latest \
+  -f frontend/Dockerfile frontend/
+docker push $ACCOUNT_ID.dkr.ecr.us-east-2.amazonaws.com/$REPO-frontend:latest
+
+# Deploy to ECS
+aws ecs update-service --cluster $REPO-cluster --service $REPO-api \
+  --force-new-deployment --region us-east-2
+aws ecs update-service --cluster $REPO-cluster --service $REPO-worker \
+  --force-new-deployment --region us-east-2
+aws ecs update-service --cluster $REPO-cluster --service $REPO-frontend \
+  --force-new-deployment --region us-east-2
 ```
 
 ### Deployed Infrastructure
@@ -190,38 +210,81 @@ aws ecs update-service --cluster <cluster-name> --service <service-name> --force
 |-----------|----------|
 | Region | us-east-2 (Ohio) |
 | ECS Cluster | dab-job-platform-c1bfa7bb-cluster |
+| API Service | dab-job-platform-c1bfa7bb-api |
+| Worker Service | dab-job-platform-c1bfa7bb-worker |
+| Frontend Service | dab-job-platform-c1bfa7bb-frontend |
 | Database | RDS PostgreSQL 16.6 (db.t3.micro) |
 | Queue | SQS with Dead Letter Queue |
 | Load Balancer | Application Load Balancer |
 | SSL Certificate | ACM (app.novaferi.net) |
 | DNS | Route 53 |
 
-### CI/CD (Coming Soon)
-GitHub Actions workflows will handle:
-- Linting and testing
-- Building and pushing Docker images
-- Deploying to ECS
-- Running integration tests
+## CI/CD
 
-## 📊 Monitoring
+### Pull Requests (CI)
+- Run Go tests with race detection
+- Build Docker images (API, Worker, Frontend)
+- Run Terraform plan
 
-- CloudWatch Logs for application logs
-- CloudWatch Metrics for system metrics
-- X-Ray for distributed tracing
-- Custom dashboards for service health
+### Merge to Master (CD)
+- Apply Terraform changes
+- Build and push Docker images to ECR
+- Deploy to ECS with rolling update
+- Health check verification
 
-## 🔐 Security
+### Required GitHub Secrets
 
-- All services run in private subnets
-- Secrets managed via AWS Secrets Manager
+| Secret | Description |
+|--------|-------------|
+| `AWS_ACCESS_KEY_ID` | AWS access key |
+| `AWS_SECRET_ACCESS_KEY` | AWS secret key |
+| `TF_VAR_RDS_PASSWORD` | RDS database password (must match deployed value) |
+
+### IAM Permissions Required
+- `ecr:*` - Docker image management
+- `ecs:*` - Service deployment
+- `s3:*` on terraform state bucket
+- `dynamodb:*` on lock table
+- `rds:*`, `sqs:*`, `ec2:*`, `iam:*`, `logs:*`
+
+## Monitoring
+
+- **CloudWatch Logs**: Application logs from all ECS services
+- **CloudWatch Metrics**: CPU, memory, request counts
+- **ECS Exec**: SSH into running containers for debugging
+
+### View Logs
+```bash
+# API logs
+aws logs tail /ecs/dab-job-platform-c1bfa7bb-api --follow --region us-east-2
+
+# Worker logs
+aws logs tail /ecs/dab-job-platform-c1bfa7bb-worker --follow --region us-east-2
+```
+
+### ECS Exec (Debug)
+```bash
+aws ecs execute-command \
+  --cluster dab-job-platform-c1bfa7bb-cluster \
+  --task <task-id> \
+  --container api \
+  --interactive \
+  --command "/bin/sh"
+```
+
+## Security
+
+- Services run in private subnets (NAT Gateway for outbound)
+- RDS accessible only from ECS security group
+- TLS/SSL termination at ALB (HTTPS via ACM certificate)
 - IAM roles with least privilege
-- TLS/SSL for all communications
-- Regular security scanning in CI/CD
+- Database credentials passed via ECS task definition environment variables
+- Sensitive terraform variables stored in GitHub Secrets
 
-## 📝 License
+## License
 
 This project is licensed under the GNU Affero General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
 
----
+**COPYRIGHT 2025 Daniel Amaya Buitrago. ALL RIGHTS RESERVED.**
 
-© 2025 Daniel Amaya Buitrago. All rights reserved.
+This code is submitted for technical assessment purposes only. For permissions, contact: daniel.amaya.buitrago@outlook.com

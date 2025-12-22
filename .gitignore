@@ -53,9 +53,10 @@ Thumbs.db
 *.tfstate
 *.tfstate.*
 .terraform/
-.terraform.lock.hcl
-*.tfvars
-!example.tfvars
+# .terraform.lock.hcl should be committed (locks provider versions)
+terraform.tfvars
+*.auto.tfvars
+!terraform.tfvars.example
 .terraformrc
 terraform.rc
 crash.log

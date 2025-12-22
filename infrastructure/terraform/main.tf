@@ -344,11 +344,13 @@ resource "aws_lb_target_group" "frontend" {
   }
 }
 
-# ALB Listeners
-resource "aws_lb_listener" "main" {
+# HTTPS Listener (main)
+resource "aws_lb_listener" "https" {
   load_balancer_arn = aws_lb.main.arn
-  port              = "80"
-  protocol          = "HTTP"
+  port              = "443"
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
+  certificate_arn   = "arn:aws:acm:us-east-2:018491521563:certificate/c2a799ea-4269-47b1-b68d-2dcc5cd87b95"
 
   default_action {
     type             = "forward"
@@ -356,9 +358,26 @@ resource "aws_lb_listener" "main" {
   }
 }
 
-# Path-based routing rules
+# HTTP Listener (redirect to HTTPS)
+resource "aws_lb_listener" "main" {
+  load_balancer_arn = aws_lb.main.arn
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    type = "redirect"
+
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
+  }
+}
+
+# Path-based routing rules (HTTPS)
 resource "aws_lb_listener_rule" "api" {
-  listener_arn = aws_lb_listener.main.arn
+  listener_arn = aws_lb_listener.https.arn
   priority     = 100
 
   action {
@@ -480,5 +499,37 @@ resource "aws_iam_role_policy" "worker_sqs_access" {
         aws_sqs_queue.jobs_dlq.arn
       ]
     }]
+  })
+}
+
+# SSM permissions for ECS Exec
+resource "aws_iam_role_policy" "ecs_exec_ssm" {
+  name = "${local.name_suffix}-ecs-exec-ssm"
+  role = aws_iam_role.ecs_task.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ssmmessages:CreateControlChannel",
+          "ssmmessages:CreateDataChannel",
+          "ssmmessages:OpenControlChannel",
+          "ssmmessages:OpenDataChannel"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:DescribeLogGroups",
+          "logs:CreateLogStream",
+          "logs:DescribeLogStreams",
+          "logs:PutLogEvents"
+        ]
+        Resource = "*"
+      }
+    ]
   })
 }
