@@ -46,6 +46,7 @@ A production-ready microservices platform demonstrating cloud-native DevOps prac
 │   (RDS 16.6)    │
 └─────────────────┘
 ```
+<img width="2837" height="1738" alt="image" src="https://github.com/user-attachments/assets/e016b54b-36e4-4531-8ae2-266ea09e413b" />
 
 **Components:**
 - **API Service**: RESTful API built with Go 1.23 and Gin framework
