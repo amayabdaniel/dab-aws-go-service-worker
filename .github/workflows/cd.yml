@@ -3,6 +3,7 @@ name: CD
 on:
   push:
     branches: [master, main]
+  workflow_dispatch:
 
 env:
   AWS_REGION: us-east-2
