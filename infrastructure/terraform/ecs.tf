@@ -167,11 +167,12 @@ resource "aws_ecs_task_definition" "frontend" {
 
 # ECS Services
 resource "aws_ecs_service" "api" {
-  name            = "${local.name_suffix}-api"
-  cluster         = aws_ecs_cluster.main.id
-  task_definition = aws_ecs_task_definition.api.arn
-  desired_count   = var.api_desired_count
-  launch_type     = "FARGATE"
+  name                   = "${local.name_suffix}-api"
+  cluster                = aws_ecs_cluster.main.id
+  task_definition        = aws_ecs_task_definition.api.arn
+  desired_count          = var.api_desired_count
+  launch_type            = "FARGATE"
+  enable_execute_command = true
 
   network_configuration {
     subnets          = aws_subnet.private[*].id
@@ -192,10 +193,11 @@ resource "aws_ecs_service" "api" {
 }
 
 resource "aws_ecs_service" "worker" {
-  name            = "${local.name_suffix}-worker"
-  cluster         = aws_ecs_cluster.main.id
-  task_definition = aws_ecs_task_definition.worker.arn
-  desired_count   = var.worker_desired_count
+  name                   = "${local.name_suffix}-worker"
+  cluster                = aws_ecs_cluster.main.id
+  task_definition        = aws_ecs_task_definition.worker.arn
+  desired_count          = var.worker_desired_count
+  enable_execute_command = true
 
   capacity_provider_strategy {
     capacity_provider = "FARGATE_SPOT"
@@ -216,11 +218,12 @@ resource "aws_ecs_service" "worker" {
 }
 
 resource "aws_ecs_service" "frontend" {
-  name            = "${local.name_suffix}-frontend"
-  cluster         = aws_ecs_cluster.main.id
-  task_definition = aws_ecs_task_definition.frontend.arn
-  desired_count   = var.frontend_desired_count
-  launch_type     = "FARGATE"
+  name                   = "${local.name_suffix}-frontend"
+  cluster                = aws_ecs_cluster.main.id
+  task_definition        = aws_ecs_task_definition.frontend.arn
+  desired_count          = var.frontend_desired_count
+  launch_type            = "FARGATE"
+  enable_execute_command = true
 
   network_configuration {
     subnets          = aws_subnet.private[*].id
