@@ -48,10 +48,10 @@ variable "rds_username" {
 }
 
 variable "rds_password" {
-  description = "RDS master password"
+  description = "RDS master password - must be provided via tfvars or TF_VAR_rds_password"
   type        = string
-  default     = "changeme123!"
   sensitive   = true
+  # No default - must be provided at runtime
 }
 
 variable "ecs_task_cpu" {

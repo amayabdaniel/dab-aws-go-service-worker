@@ -238,6 +238,7 @@ aws ecs update-service --cluster $REPO-cluster --service $REPO-frontend \
 |--------|-------------|
 | `AWS_ACCESS_KEY_ID` | AWS access key |
 | `AWS_SECRET_ACCESS_KEY` | AWS secret key |
+| `TF_VAR_RDS_PASSWORD` | RDS database password (must match deployed value) |
 
 ### IAM Permissions Required
 - `ecr:*` - Docker image management
@@ -275,9 +276,10 @@ aws ecs execute-command \
 
 - Services run in private subnets (NAT Gateway for outbound)
 - RDS accessible only from ECS security group
-- TLS/SSL termination at ALB
+- TLS/SSL termination at ALB (HTTPS via ACM certificate)
 - IAM roles with least privilege
-- No secrets in code (environment variables via ECS task definitions)
+- Database credentials passed via ECS task definition environment variables
+- Sensitive terraform variables stored in GitHub Secrets
 
 ## License
 
