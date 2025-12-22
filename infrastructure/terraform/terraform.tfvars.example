@@ -1,0 +1,26 @@
+aws_region            = "us-east-2"
+environment           = "demo"
+project_name          = "dab-job-platform"
+vpc_cidr              = "10.0.0.0/16"
+availability_zones    = ["us-east-2a", "us-east-2b"]
+
+# Cost-optimized settings
+enable_multi_az           = false
+enable_container_insights = false
+enable_nat_gateway        = true
+log_retention_days        = 7
+
+# Minimal resources
+rds_instance_class    = "db.t3.micro"
+rds_allocated_storage = 20
+rds_username          = "dbadmin"
+rds_password          = "CHANGE_ME_USE_SECRETS_MANAGER"
+
+# Smallest ECS tasks
+ecs_task_cpu    = "256"
+ecs_task_memory = "512"
+
+# Minimal service counts
+api_desired_count      = 1
+worker_desired_count   = 1
+frontend_desired_count = 1

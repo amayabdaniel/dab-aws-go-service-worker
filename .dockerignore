@@ -1,0 +1,50 @@
+# Git
+.git
+.gitignore
+
+# CI
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Docker
+docker-compose.yml
+.docker
+
+# IDE
+.idea
+.vscode
+
+# Docs
+*.md
+docs
+LICENSE
+SECURITY.md
+
+# Testing
+*_test.go
+tests/
+
+# Terraform
+infrastructure/
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# Build artifacts
+bin/
+dist/
+
+# OS
+.DS_Store
+
+# Environment
+.env
+.env.*
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
