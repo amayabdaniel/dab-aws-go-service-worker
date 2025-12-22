@@ -238,6 +238,6 @@ resource "aws_ecs_service" "frontend" {
   }
 
   depends_on = [
-    aws_lb_listener.main
+    aws_lb_listener.https
   ]
 }
