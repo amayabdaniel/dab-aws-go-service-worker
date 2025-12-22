@@ -28,3 +28,13 @@ output "rds_endpoint" {
   value       = aws_db_instance.main.endpoint
   sensitive   = true
 }
+
+output "bastion_instance_id" {
+  description = "Bastion host instance ID for SSM port forwarding"
+  value       = aws_instance.bastion.id
+}
+
+output "bastion_public_ip" {
+  description = "Bastion host Elastic IP"
+  value       = aws_eip.bastion.public_ip
+}
