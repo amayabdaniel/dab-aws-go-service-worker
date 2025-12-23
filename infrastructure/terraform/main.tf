@@ -267,6 +267,7 @@ resource "aws_sqs_queue" "jobs_dlq" {
 resource "aws_ecr_repository" "api" {
   name                 = "${local.name_suffix}-api"
   image_tag_mutability = "MUTABLE"
+  force_delete         = true
 
   image_scanning_configuration {
     scan_on_push = true
@@ -276,6 +277,7 @@ resource "aws_ecr_repository" "api" {
 resource "aws_ecr_repository" "worker" {
   name                 = "${local.name_suffix}-worker"
   image_tag_mutability = "MUTABLE"
+  force_delete         = true
 
   image_scanning_configuration {
     scan_on_push = true
@@ -285,6 +287,7 @@ resource "aws_ecr_repository" "worker" {
 resource "aws_ecr_repository" "frontend" {
   name                 = "${local.name_suffix}-frontend"
   image_tag_mutability = "MUTABLE"
+  force_delete         = true
 
   image_scanning_configuration {
     scan_on_push = true
